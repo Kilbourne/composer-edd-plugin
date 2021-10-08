@@ -4,7 +4,7 @@
     "type": "composer-plugin",
     "require": {
         "composer-plugin-api": "^1.1",
-        "vlucas/phpdotenv": "^4.1"
+        "vlucas/phpdotenv": "^5.0.0"
     },
     "require-dev": {
         "composer/composer": "^1.10"
