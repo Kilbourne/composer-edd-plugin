@@ -81,12 +81,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	 * @param PackageEvent $event
 	 */
 	public function getDownloadUrl( $package) {
-		$this->downloadUrl = '';
-		try {
-			$package_version = $package->getPrettyVersion();
-		} catch (Exception $e){
-			var_dump($package);
-		}
+		$downloadUrl = '';
+
+		$package_version = $package->getPrettyVersion();
         $package_dist_url  = $package->getDistUrl();
 		$package_extra     = $package->getExtra();
 
@@ -129,11 +126,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$package_details = [
 				'edd_action' => 'get_version',
 				'license'    => getenv( $package_extra['license'] ),
-				'item_name'  => $package_extra['item_name'],
+
 				'url'        => getenv( $package_extra['url'] ),
 				'version'    => $package_version,
 			];
-
+			//var_dump(is_string($package_extra['item_name']),$package_extra['item_name']);
+			$package_details[is_string($package_extra['item_name']) ? 'item_name' : 'item_id'] = $package_extra['item_name'];
 			$url = $package_dist_url . '?' . http_build_query($package_details);
 
 			$context = stream_context_create([
@@ -155,10 +153,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 			$edd_data = json_decode($edd_response, true);
 			if( !empty($edd_data['download_link'])) {
-				$this->downloadUrl = $edd_data['download_link'];
+				echo $edd_data['download_link'];
+				$downloadUrl = $edd_data['download_link'];
 			}
 
 		}
+		return $downloadUrl;
 	}
 
 	/**
@@ -169,15 +169,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	public function onPreFileDownload( PreFileDownloadEvent $event ) {
 			$package = $event->getContext();
 		if ( $event->getType() === 'package' && $package instanceof PackageInterface) {
-			$this->getDownloadUrl($package);
+			$downloadUrl = $this->getDownloadUrl($package);
 		}
 
-		if ( empty( $this->downloadUrl ) ) {
+		if ( empty( $downloadUrl ) ) {
 			return;
 		}
 
-		$event->setProcessedUrl($this->downloadUrl);
-		$event->setCustomCacheKey($this->downloadUrl);
+		$event->setProcessedUrl($downloadUrl);
+		$event->setCustomCacheKey($downloadUrl);
 	}
 
 }
