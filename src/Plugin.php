@@ -10,6 +10,7 @@ use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PreFileDownloadEvent;
+use Composer\Package\PackageInterface;
 use Dotenv\Dotenv;
 use Exception;
 use LubusIN\ComposerEddPlugin\Exception\MissingAuthException;
@@ -36,18 +37,18 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$this->io       = $io;
 
 		if ( file_exists( getcwd() . DIRECTORY_SEPARATOR . '.env' ) ) {
-			$dotenv = Dotenv::createImmutable( getcwd() );
+			$dotenv = Dotenv::createUnsafeImmutable( getcwd() );
 			$dotenv->load();
 		}
 	}
-	
+
 	public function uninstall(Composer $composer, IOInterface $io){
-	
+
 	}
-	
+
 	public function deactivate(Composer $composer, IOInterface $io){
 	}
-	
+
 	/**
 	 * Set subscribed events.
 	 *
@@ -55,8 +56,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	 */
 	public static function getSubscribedEvents() {
 		return array(
-			PackageEvents::PRE_PACKAGE_INSTALL => 'getDownloadUrl',
-			PackageEvents::PRE_PACKAGE_UPDATE => 'getDownloadUrl',
+			//PackageEvents::PRE_PACKAGE_INSTALL => 'getDownloadUrl',
+			//PackageEvents::PRE_PACKAGE_UPDATE => 'getDownloadUrl',
 			PluginEvents::PRE_FILE_DOWNLOAD => 'onPreFileDownload',
 		);
 	}
@@ -68,7 +69,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	 * @return mixed
 	 */
 	protected function getPackageFromOperation( OperationInterface $operation ) {
-		if ( 'update' === $operation->getJobType() ) {
+		if ( 'update' === $operation->getOperationType() ) {
 			return $operation->getTargetPackage();
 		}
 		return $operation->getPackage();
@@ -79,27 +80,30 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	 *
 	 * @param PackageEvent $event
 	 */
-	public function getDownloadUrl( PackageEvent $event ) {
+	public function getDownloadUrl( $package) {
 		$this->downloadUrl = '';
-		$package           = $this->getPackageFromOperation( $event->getOperation() );
-        $package_version   = $package->getPrettyVersion();
-        $package_dist_url  = $package->getDistUrl(); 
+		try {
+			$package_version = $package->getPrettyVersion();
+		} catch (Exception $e){
+			var_dump($package);
+		}
+        $package_dist_url  = $package->getDistUrl();
 		$package_extra     = $package->getExtra();
-		
-		if (!empty( $package_extra['edd_installer'])) {	
+
+		if (!empty( $package_extra['edd_installer'])) {
 			if (empty($package_extra['item_name'])) {
 				throw new MissingExtraException('item_name');
-			} 
-	
+			}
+
 			if (empty($package_extra['license'])) {
 				throw new MissingExtraException('license');
-			} 
+			}
 			else {
 				if (!getenv($package_extra['license'])) {
 					throw new MissingEnvException('license');
 				}
 			}
-	
+
 			if (empty($package_extra['url'])) {
 				throw new MissingExtraException('url');
 			} else {
@@ -130,22 +134,26 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 				'version'    => $package_version,
 			];
 
+			$url = $package_dist_url . '?' . http_build_query($package_details);
+
 			$context = stream_context_create([
 				"http" => [
 					"method"  => "POST",
-					'header'  =>"Content-Type: application/json; charset=utf-8",
+					'header'  =>[
+						"Content-Type: application/json; charset=utf-8",
+						'Content-Length: 0'
+					],
 					"timeout" => 30,
 				],
 			]);
-		
-			$edd_response = file_get_contents($package_dist_url . '?' . http_build_query($package_details), false, $context);
+
+			$edd_response = file_get_contents($url, false, $context);
 
 			if( !$edd_response) {
 				throw new Exception('Unable to connect to ' . $package_dist_url);
 			}
-			
-			$edd_data = json_decode($edd_response, true); 
 
+			$edd_data = json_decode($edd_response, true);
 			if( !empty($edd_data['download_link'])) {
 				$this->downloadUrl = $edd_data['download_link'];
 			}
@@ -159,19 +167,17 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 	 * @param PreFileDownloadEvent $event
 	 */
 	public function onPreFileDownload( PreFileDownloadEvent $event ) {
+			$package = $event->getContext();
+		if ( $event->getType() === 'package' && $package instanceof PackageInterface) {
+			$this->getDownloadUrl($package);
+		}
+
 		if ( empty( $this->downloadUrl ) ) {
 			return;
 		}
 
-		$RemoteFileSystem = $event->getRemoteFilesystem();
-		$EddStore = new RemoteFilesystem(
-			$this->downloadUrl,
-			$this->io,
-			$this->composer->getConfig(),
-			$RemoteFileSystem->getOptions(),
-			$RemoteFileSystem->isTlsDisabled()
-		);
-		$event->setRemoteFilesystem( $EddStore );
+		$event->setProcessedUrl($this->downloadUrl);
+		$event->setCustomCacheKey($this->downloadUrl);
 	}
 
 }
