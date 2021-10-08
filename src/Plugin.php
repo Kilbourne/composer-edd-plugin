@@ -40,7 +40,14 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$dotenv->load();
 		}
 	}
-
+	
+	public function uninstall(Composer $composer, IOInterface $io){
+	
+	}
+	
+	public function deactivate(Composer $composer, IOInterface $io){
+	}
+	
 	/**
 	 * Set subscribed events.
 	 *
