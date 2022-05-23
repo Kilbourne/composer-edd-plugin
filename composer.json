@@ -1,5 +1,5 @@
 {
-    "name": "lubusin/composer-edd-plugin",
+    "name": "kilbourne/composer-edd-plugin",
     "description": "Composer plugin for installing pro plugins powered by EDD software licensing",
     "type": "composer-plugin",
     "require": {
