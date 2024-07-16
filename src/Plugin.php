@@ -126,7 +126,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
             ];
 			$content = [
                 "action"=>"awp_get_addon_download_link",
-                "addonId"=>345,
+                "addonId"=>$package_extra['item_name'],
                 "paymentData"=> json_encode($payment_data),
             ];
             $query =  http_build_query($content);
