@@ -10,12 +10,6 @@
         "composer/composer": "^2.0"
     },
     "license": "MIT",
-    "authors": [
-        {
-            "name": "Ajit Bohra",
-            "email": "ajit@lubus.in"
-        }
-    ],
     "autoload": {
         "psr-4": {
             "LubusIN\\ComposerEddPlugin\\": "src"
