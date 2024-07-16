@@ -128,7 +128,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
                     "payment_id"=>146746,
                 ]
             ];
-            $query =  http_build_query($package_details);
+            $query =  http_build_query($content);
             $context = stream_context_create([
 				"http" => [
 					"method"  => "POST",
