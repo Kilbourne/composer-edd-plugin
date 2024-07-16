@@ -109,20 +109,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 				}
 			}
 
-			if ( file_exists( getcwd() . DIRECTORY_SEPARATOR . 'auth.json' ) ) {
-				$auth_file = getcwd() . DIRECTORY_SEPARATOR . 'auth.json';
-				$auth_data = json_decode(file_get_contents($auth_file), true);
-				$package = parse_url($package_dist_url);
-
-				print $package['host'];
-
-				if (!array_key_exists($package['host'], $auth_data['http-basic'])) {
-					throw new MissingAuthException('Auth credentials missing for ' . $package['host']);
-				}
-			} else {
-				throw new MissingAuthException('Auth file auth.json missing');
-			}
-
 			$package_details = [
 				'edd_action' => 'get_version',
 				'license'    => getenv( $package_extra['license'] ),
@@ -153,7 +139,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
 			$edd_data = json_decode($edd_response, true);
 			if( !empty($edd_data['download_link'])) {
-				echo $edd_data['download_link'];
 				$downloadUrl = $edd_data['download_link'];
 			}
 
