@@ -120,13 +120,14 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$package_details[is_string($package_extra['item_name']) ? 'item_name' : 'item_id'] = $package_extra['item_name'];
 			$url = $package_dist_url . '?' . http_build_query($package_details);
 
+            $payment_data = [
+                    "user_email"=>"luca@mosalingua.com",
+                    "payment_id"=>146746,
+            ];
 			$content = [
                 "action"=>"awp_get_addon_download_link",
                 "addonId"=>345,
-                "paymentData"=> [
-                    "user_email"=>"luca@mosalingua.com",
-                    "payment_id"=>146746,
-                ]
+                "paymentData"=> json_encode($payment_data),
             ];
             $query =  http_build_query($content);
             $context = stream_context_create([
