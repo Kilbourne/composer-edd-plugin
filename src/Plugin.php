@@ -120,27 +120,37 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 			$package_details[is_string($package_extra['item_name']) ? 'item_name' : 'item_id'] = $package_extra['item_name'];
 			$url = $package_dist_url . '?' . http_build_query($package_details);
 
-			$context = stream_context_create([
+			$content = [
+                "action"=>"awp_get_addon_download_link",
+                "addonId"=>345,
+                "paymentData"=> [
+                    "user_email"=>"luca@mosalingua.com",
+                    "payment_id"=>146746,
+                ]
+            ];
+            $query =  http_build_query($package_details);
+            $context = stream_context_create([
 				"http" => [
 					"method"  => "POST",
 					'header'  =>[
-						"Content-Type: application/json; charset=utf-8",
-						'Content-Length: 0'
+						"Content-Type: application/x-www-form-urlencoded; charset=UTF-8",
+						'Content-Length: '.strlen($query),
 					],
+                    'content' => $query,
 					"timeout" => 30,
 				],
 			]);
 
-			$edd_response = file_get_contents($url, false, $context);
+			$edd_response = file_get_contents("https://affiliatewp.com/wp-admin/admin-ajax.php", false, $context);
 
 			if( !$edd_response) {
 				throw new Exception('Unable to connect to ' . $package_dist_url);
 			}
 
-			$edd_data = json_decode($edd_response, true);
-			if( !empty($edd_data['download_link'])) {
-				$downloadUrl = $edd_data['download_link'];
-			}
+			//$edd_data = json_decode($edd_response, true);
+			//if( !empty($edd_data['download_link'])) {
+			//}
+            $downloadUrl = $edd_response;
 
 		}
 		return $downloadUrl;
