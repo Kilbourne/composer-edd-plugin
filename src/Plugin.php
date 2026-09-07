@@ -36,8 +36,11 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 		$this->composer = $composer;
 		$this->io       = $io;
 
-		if ( file_exists( getcwd() . DIRECTORY_SEPARATOR . '.env' ) ) {
-			$dotenv = Dotenv::createUnsafeImmutable( getcwd() );
+		$env_files = ['.env','.env.secret'];
+		$env_files = array_filter($env_files,fn($env_file) => file_exists( getcwd() . DIRECTORY_SEPARATOR . $env_file ));
+		
+		if ( $env_files ) {
+			$dotenv = Dotenv::createUnsafeImmutable( getcwd(), $env_files );
 			$dotenv->load();
 		}
 	}
